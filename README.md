@@ -30,6 +30,9 @@ This project enables the use of ComfyUI Workflows in Telegram.
 > [!IMPORTANT]
 > This node works on **Bot** provided by **Telegram** so if you want to change Bot register New bot using **BotFather** and change **BOT_TOKEN** in `telegram.json` 
 
+> [!IMPORTANT]
+> Supports group chat. add bot to a group and any user can give commands of that group.
+
 <br />
 
 # Installation
