@@ -2,16 +2,16 @@
 
 <br />
 <div align="center">
-  <a href="https://github.com/daxcay/ComfyUI-WA">
-    <img src="https://github.com/user-attachments/assets/117eab82-ef7a-4199-9a27-68c75ed25861" width="256px" height="128px">
+  <a href="https://github.com/daxcay/ComfyUI-TG">
+    <img src="https://github.com/user-attachments/assets/c35f3c6f-9a8b-426f-9dc8-79c7b2e535d1" width="256px" height="128px">
   </a>
 
-  <h3 align="center">WhatsApp in ComfyUI</h3>
+  <h3 align="center">Telegram in ComfyUI</h3>
 
   <p align="center">
-    <a href="https://github.com/daxcay/ComfyUI-WA/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    <a href="https://github.com/daxcay/ComfyUI-TG/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     ·
-    <a href="https://github.com/daxcay/ComfyUI-WA/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="https://github.com/daxcay/ComfyUI-TG/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 
   <p align="center">
@@ -23,78 +23,70 @@
 
 # About The Project
 
-This project enables the use of ComfyUI Workflows in WhatsApp.
-
-![WhatsApp](https://github.com/user-attachments/assets/a1f9faa8-4704-4928-8a75-fb7ada4956ad)
-
-Video Tutorial: Coming Soon!
+This project enables the use of ComfyUI Workflows in Telegram.
 
 <br />
 
 > [!IMPORTANT]
-> To log out, first stop ComfyUI and delete the `user` folder from the ComfyUI/WhatsApp directory. Then, restart ComfyUI, and log out from the linked device in WhatsApp.
+> This node works on **Bot** provided by **Telegram** so if you want to change Bot register New bot using **BotFather** and change **BOT_TOKEN** in `telegram.json` 
+
+<br />
 
 # Installation
 
   - ### Installing Using `comfy-cli`
-    - `comfy node registry-install ComfyUI-WA`
-    - https://registry.comfy.org/publishers/daxcay/nodes/comfyui-wa
+    - `comfy node registry-install ComfyUI-TG`
+    - https://registry.comfy.org/publishers/daxcay/nodes/comfyui-tg
   
   - ### Manual Method
     - Go to your `ComfyUI\custom_nodes` and Run CMD.
-    - Copy and paste this command: `git clone https://github.com/daxcay/ComfyUI-WA.git`
+    - Copy and paste this command: `git clone https://github.com/daxcay/ComfyUI-TG.git`
   
   - ### Automatic Method with [Comfy Manager](https://github.com/ltdrdata/ComfyUI-Manager)
     - Inside ComfyUI > Click the Manager Button on the side.
-    - Click `Custom Nodes Manager` and search for `ComfyUI-WA`, then install this node.
+    - Click `Custom Nodes Manager` and search for `ComfyUI-TG`, then install this node.
 
   - ### Node Installation
+    - For someone facing automated node installation error. 
     - Install lateset version of node js.
     - https://nodejs.org/en/download/package-manager
-    - for `non-windows` users.  
   
   <br>
   
   >[!IMPORTANT]
   > #### **Restart ComfyUI and Stop ComfyUI before proceeding to next step**
 
+<br />
 
 # Setup
 
-From `ComfyUI/WhatsApp` folder open `whatsapp.json`
+### Location of Telegram folder
 
-![image](https://github.com/user-attachments/assets/bf244483-690a-4cb3-9e1b-5016cc78c13e)
+#### ComfyUI Folder
+  - `Drive:/ComfyUI_windows_portable/Telegram`
 
-![image](https://github.com/user-attachments/assets/b7648e31-7be8-450c-a93f-f04072c694d2)
+#### Stable Matrix
+   -  **Full Version**: `Drive:/StabilityMatrix/Packages/ComfyUI/Telegram`
+   -  **Portable Version**: `Drive:/StabilityMatrix/Data/Packages/ComfyUI/Telegram`
+
+From `ComfyUI/Telegram` folder open `telegram.json`
+
+![image](https://github.com/user-attachments/assets/a30ca344-d07a-48a2-8f65-39b3a564d83b)
 
 > [!IMPORTANT]
-> Fill `phone_code` and `phone` and save it. this will your admin account.
-
-`phone_code` is tobe entered without `+` and `-`
+> Fill `BOT_TOKEN` and save it.
 
 >[!IMPORTANT]
 > #### **Start ComfyUI before proceeding to next step**
 
-## Device Link
-
->[!IMPORTANT]
-> #### **Login from the same number you defined in `whatsapp.json` above**
-
-![download](https://github.com/user-attachments/assets/2a7b080c-8e31-4bc8-b571-f8604dcc202b)
-
-## Enable Dev Mode
-
->[!IMPORTANT]
-> #### **Enable dev mode and save workflow in `api` format to make it compatible.**
-
-![download (1)](https://github.com/user-attachments/assets/15d6fda5-86af-4514-9884-32e7bb4cde84)
+<br />
 
 ## Uploading WorkFlow
 
-To upload a workflow to be used in in whatsapp use the `workflow` button in whatsapp dashboard.
+To upload a workflow to be used in in telegram use the `workflow` button in telegram dashboard.
 
 >[!IMPORTANT]
-> #### **Attach `WA-ImageSaver` Node before saving the workflow in api format**
+> #### **Attach `TG-ImageSaver` Node before saving the workflow in api format**
 
 ![image](https://github.com/user-attachments/assets/42a54f56-8dcc-4831-9d20-1c24ede24b46)
 
@@ -102,10 +94,11 @@ Now upload it in workflow section
 
 ![image](https://github.com/user-attachments/assets/10d7a0e6-5279-4d4e-a580-2b1235229a78)
 
+<br />
 
-# WhatsApp Commands
+# Telegram Commands
 
-Writing **/c** in whatsapp will also provide the list of all commands:
+Writing **/c** will also provide the list of all commands:
 
 ![image](https://github.com/user-attachments/assets/d6ffb055-6285-4648-8396-9aa4bd48091d)
 
@@ -168,8 +161,8 @@ Writing **/c** in whatsapp will also provide the list of all commands:
 
 # Disclaimer
 
-This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with WhatsApp or any of its subsidiaries or its affiliates. The official WhatsApp website can be found at whatsapp.com. "WhatsApp" as well as related names, marks, emblems and images are registered trademarks of their respective owners. Also it is not guaranteed you will not be blocked by using this method. WhatsApp does not allow bots or unofficial clients on their platform, so this shouldn't be considered totally safe.
+This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Telegram or any of its subsidiaries or its affiliates. The official Telegram website can be found at https://telegram.org/. "Telegram" as well as related names, marks, emblems and images are registered trademarks of their respective owners. 
 
-I have used `NodeJS` and 'Python` combined to make this project the library, I am using the following library in nodejs to enable whatsapp functionality. 
+I have used `NodeJS` and 'Python` combined to make this project the library, I am using the following library in nodejs to enable telegram functionality. 
 
-https://github.com/pedroslopez/whatsapp-web.js
+https://github.com/yagop/node-telegram-bot-api
