@@ -50,7 +50,7 @@ This project enables the use of ComfyUI Workflows in Telegram.
     - Click `Custom Nodes Manager` and search for `ComfyUI-TG`, then install this node.
 
   - ### Node Installation
-    - For someone facing automated node installation error. 
+    - For someone facing automated node installation error or is not on windows os. 
     - Install lateset version of node js.
     - https://nodejs.org/en/download/package-manager
   
