@@ -98,10 +98,15 @@ function createDirectories(config) {
 }
 
 function botMediaMessage(message, caption, path) {
-	CONFIG.TG.sendPhoto(message.chat.id, path, {
-		caption: caption,
-		reply_parameters: { message_id: message.message_id },
-	});
+	try {
+		path = fs.readFileSync(path)
+		CONFIG.TG.sendPhoto(message.chat.id, path, {
+			caption: caption,
+			reply_parameters: { message_id: message.message_id },
+		});			
+	} catch (error) {
+		console.log("Media File Read Error")		
+	}
 }
 
 function botTextMessagReply(message, text) {
@@ -278,13 +283,6 @@ function editJSON(number, inputName, inputValue, data) {
 	}
 }
 
-function extractPhoneNumber(inputString) {
-	const parts = inputString.split("@");
-	const firstPart = parts[0];
-	const phoneNumber = firstPart.slice(-10);
-	return phoneNumber;
-}
-
 async function sendResultToUser(message, images) {
 	if (images.length > 0) {
 		images.forEach(async (image) => {
@@ -296,7 +294,7 @@ async function sendResultToUser(message, images) {
 
 async function watch(message, data) {
 	try {
-		let user = message.from.username;
+		let user = message.from.id+"";
 
 		if (!CONFIG.WATCHER[user]) {
 			CONFIG.WATCHER[user] = {
@@ -330,12 +328,15 @@ async function watch(message, data) {
 }
 
 function setCommand(message) {
+
 	const text = message.text;
 
 	let sliced = text.split(" ");
 	let command = sliced[0];
 
-	let user = message.from.username;
+	let user = message.from.id+"";
+
+	console.log(message)
 
 	switch (command) {
 		case "/c":
@@ -469,29 +470,35 @@ function setCommand(message) {
 			botTextMessagReply(message, "Reset Done.\n");
 			break;
 		case "/q":
-			if (CONFIG.KSAMPLER_SEED_CHANGE) {
-				editInputs(CONFIG.PROMPT.NODES[user], "KSampler", "seed", Date.now());
+			try {
+				if (CONFIG.KSAMPLER_SEED_CHANGE) {
+					editInputs(CONFIG.PROMPT.NODES[user], "KSampler", "seed", Date.now());
+				}
+				editInputs(
+					CONFIG.PROMPT.NODES[user],
+					"TG_ImageSaver",
+					"Path",
+					path.join(CONFIG.OUTPUT_DIRECTORY, user)
+				);
+				let requestOptions = {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ prompt: CONFIG.PROMPT.NODES[user] })
+				};
+				fetch(CONFIG.API_URL + "/prompt", requestOptions)
+					.then((response) => response.json())
+					.then((data) => {
+						botTextMessagReply(message, "Promt Submitted.\n");
+						watch(message, data);
+					})
+					.catch((error) => console.error("Error:", error));
+					
+			} catch (error) {
+				console.log()
+				console.log(error)				
 			}
-			editInputs(
-				CONFIG.PROMPT.NODES[user],
-				"TG_ImageSaver",
-				"Path",
-				path.join(CONFIG.OUTPUT_DIRECTORY, extractPhoneNumber(user))
-			);
-			let requestOptions = {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ prompt: CONFIG.PROMPT.NODES[user] }),
-			};
-			fetch(CONFIG.API_URL + "/prompt", requestOptions)
-				.then((response) => response.json())
-				.then((data) => {
-					botTextMessagReply(message, "Promt Submitted.\n");
-					watch(message, data);
-				})
-				.catch((error) => console.error("Error:", error));
 			break;
 		case "/i":
 			fetch(CONFIG.API_URL + "/interrupt", {
