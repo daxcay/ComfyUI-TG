@@ -6,7 +6,7 @@
     <img src="https://github.com/user-attachments/assets/c35f3c6f-9a8b-426f-9dc8-79c7b2e535d1" width="256px" height="128px">
   </a>
 
-  <h3 align="center">Telegram in ComfyUI</h3>
+  <h3 align="center">ComfyUI in Telegram</h3>
 
   <p align="center">
     <a href="https://github.com/daxcay/ComfyUI-TG/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
