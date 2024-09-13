@@ -60,6 +60,8 @@ This project enables the use of ComfyUI Workflows in Telegram.
 
 # Setup
 
+
+
 ### Location of Telegram folder
 
 #### ComfyUI Folder
@@ -88,63 +90,61 @@ To upload a workflow to be used in in telegram use the `workflow` button in tele
 >[!IMPORTANT]
 > #### **Attach `TG-ImageSaver` Node before saving the workflow in api format**
 
-![image](https://github.com/user-attachments/assets/42a54f56-8dcc-4831-9d20-1c24ede24b46)
+![image](https://github.com/user-attachments/assets/2ae18c4b-dd0d-4385-b404-0c4c09a08e5a)
 
 Now upload it in workflow section
 
-![image](https://github.com/user-attachments/assets/10d7a0e6-5279-4d4e-a580-2b1235229a78)
+![image](https://github.com/user-attachments/assets/d0cae95f-3dea-42d5-9948-69093486ab52)
 
 <br />
 
 # Telegram Commands
 
-Writing **/c** will also provide the list of all commands:
+Writing **/c** or **/start** will also provide the list of all commands:
 
-![image](https://github.com/user-attachments/assets/d6ffb055-6285-4648-8396-9aa4bd48091d)
+![image](https://github.com/user-attachments/assets/e1eae84a-e0f2-41a8-9389-144eb5afd8bd)
 
 - Write **/wfs** to get a numbered list of uploaded workflows.
 
-![image](https://github.com/user-attachments/assets/f4bafaf7-35e9-4a52-a7a0-7f81544870d9)
+![image](https://github.com/user-attachments/assets/4227503e-df68-4692-8c10-d5fd2ace5754)
 
 - Write **/wf id** to select the workflow.
 
-![image](https://github.com/user-attachments/assets/73fdd686-02d0-4eba-a871-0c8dcc6b403c)
+![image](https://github.com/user-attachments/assets/d5c63d1c-98e1-422f-8986-e38dc86f6986)
 
 - Write **/wns** to get numbered list of selected workflow nodes.
 
-![image](https://github.com/user-attachments/assets/cebc3fc5-16c9-4257-ad05-01689e4a4861)
+![image](https://github.com/user-attachments/assets/04577a8d-53a2-41f2-ab8f-92c409598ef0)
 
 - Write **/wn id** to get numbered list of inputs available.
 
-![image](https://github.com/user-attachments/assets/37201990-4e30-4485-a176-730f7e400df1)
+![image](https://github.com/user-attachments/assets/85b19d92-39ee-48c9-965d-27ffaed24b1d)
 
 - Write **/s node_id input_id value** to set value for input selected.
 
-![image](https://github.com/user-attachments/assets/c5efac5f-fbfc-4b7a-aa2f-835d4a207c99)
+![image](https://github.com/user-attachments/assets/e3e6de3f-792a-4b1c-8696-5ed4540a4c3f)
 
 - Write **/sce** enable auto ksampler seed change.
 
-![image](https://github.com/user-attachments/assets/8a2975e4-9f5a-4e7b-81be-ac5cf90dd07a)
+![image](https://github.com/user-attachments/assets/5792d046-ceb6-4923-aae9-bb3c9f7d83ff)
 
 - Write **/scd** disable auto ksampler seed change.
 
-![image](https://github.com/user-attachments/assets/965b293b-217a-4f52-90ee-7dcb4740f48d)
-
-- Write **/r** to reset all to default settings.
-
-![image](https://github.com/user-attachments/assets/0488b0c2-b42c-487c-b5ca-5330fcfed0d0)
+![image](https://github.com/user-attachments/assets/f2e8209e-1dd7-4f3e-bd3d-fc30916789f5)
 
 - Write **/q** to queue.
 
-![image](https://github.com/user-attachments/assets/d740d8c9-8e8c-4d5b-b8be-5251b6f2d3e7)
+![image](https://github.com/user-attachments/assets/1fcd1e64-eb2b-4216-b958-b6ff820397f5)
+
+- Write **/r** to reset all to default settings.
+
+![image](https://github.com/user-attachments/assets/e615e2f1-cd4b-4f42-9572-e2f684542ff9)
 
 - Write **/i** to interrupt queue.
 
-![image](https://github.com/user-attachments/assets/b6f25a49-1066-4c33-955a-90c652ff3aee)
+![image](https://github.com/user-attachments/assets/d9710b51-c7b5-4750-8c96-47a3e040dacc)
 
-- Write **/m number** to set bot usage mode. **1**: Single User, **2**: Multi User.'
-
-![image](https://github.com/user-attachments/assets/09c8a252-2fc0-41be-84af-1fac38e74b36)
+<br/>
 
 # Contact
 
@@ -158,6 +158,7 @@ Writing **/c** will also provide the list of all commands:
      - **Patreon**: https://patreon.com/daxtoncaylor
      - **Buy me a coffee**: https://buymeacoffee.com/daxtoncaylor
 
+<br/>
 
 # Disclaimer
 
