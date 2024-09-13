@@ -1,0 +1,15 @@
+[project]
+name = "comfyui-tg"
+description = "Comfy UI in Telegram"
+version = "1.0.0"
+license = { file = "LICENSE" }
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/daxcay/ComfyUI-TG"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = "daxcay"
+DisplayName = "ComfyUI-TG"
+Icon = "https://raw.githubusercontent.com/daxcay/ComfyUI-TG/main/web/assets/img/logo.gif"
