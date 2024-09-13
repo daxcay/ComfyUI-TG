@@ -336,8 +336,6 @@ function setCommand(message) {
 
 	let user = message.from.id+"";
 
-	console.log(message)
-
 	switch (command) {
 		case "/c":
 		case "/start":
