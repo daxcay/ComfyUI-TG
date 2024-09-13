@@ -60,7 +60,9 @@ This project enables the use of ComfyUI Workflows in Telegram.
 
 # Setup
 
+### Getting bot token from BotFather
 
+![Untitled design (6)](https://github.com/user-attachments/assets/ea381db3-4d28-4535-9c87-490ff2af9df4)
 
 ### Location of Telegram folder
 
