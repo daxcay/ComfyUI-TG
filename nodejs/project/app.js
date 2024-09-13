@@ -116,8 +116,7 @@ function allCommands() {
 	rules += "Write /wf id to select the workflow.\n\n";
 	rules += "Write /wns to get numbered list of selected workflow nodes.\n\n";
 	rules += "Write /wn id to get numbered list of inputs available.\n\n";
-	rules +=
-		"Write /s node_id input_id value to set value for input selected.\n\n";
+	rules += "Write /s node_id input_id value to set value for input selected.\n\n";
 	rules += "Write /sce enable auto ksampler seed change.\n\n";
 	rules += "Write /scd disable auto ksampler seed change.\n\n";
 	rules += "Write /r to reset all to default settings.\n\n";
@@ -340,6 +339,7 @@ function setCommand(message) {
 
 	switch (command) {
 		case "/c":
+		case "/start":
 			botTextMessagReply(message, allCommands());
 			break;
 		case "/wfs":
