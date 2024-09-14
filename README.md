@@ -53,6 +53,10 @@ This project enables the use of ComfyUI Workflows in Telegram.
     - For someone facing automated node installation error or is not on windows os. 
     - Install lateset version of node js.
     - https://nodejs.org/en/download/package-manager
+      
+  > [!CAUTION]
+  > Update to nodejs version v20.17.0 if you already have it. https://nodejs.org/dist/v20.17.0/node-v20.17.0-x64.msi
+
   
   <br>
   
