@@ -18,7 +18,7 @@ let CONFIG = {
 	EXPRESS: express(),
 	TG: null,
 	READY: false,
-	KSAMPLER_SEED_CHANGE: 1,
+	SEED_CHANGE: 1,
 	MODELS: {},
 	PROMPT: {
 		MODEL: {},
@@ -408,11 +408,11 @@ function setCommand(message) {
 			}
 			break;
 		case "/sce":
-			CONFIG.KSAMPLER_SEED_CHANGE = 1;
+			CONFIG.SEED_CHANGE = 1;
 			botTextMessagReply(message, `KSampler Seed Change: Enabled`);
 			break;
 		case "/scd":
-			CONFIG.KSAMPLER_SEED_CHANGE = 0;
+			CONFIG.SEED_CHANGE = 0;
 			botTextMessagReply(message, `KSampler Seed Change: Disabled`);
 			break;
 		case "/s":
@@ -469,8 +469,9 @@ function setCommand(message) {
 			break;
 		case "/q":
 			try {
-				if (CONFIG.KSAMPLER_SEED_CHANGE) {
+				if (CONFIG.SEED_CHANGE) {
 					editInputs(CONFIG.PROMPT.NODES[user], "KSampler", "seed", Date.now());
+					editInputs(CONFIG.PROMPT.NODES[user], "RandomNoise", "noise_seed", Date.now());					
 				}
 				editInputs(
 					CONFIG.PROMPT.NODES[user],
