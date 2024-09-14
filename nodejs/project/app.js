@@ -409,11 +409,11 @@ function setCommand(message) {
 			break;
 		case "/sce":
 			CONFIG.SEED_CHANGE = 1;
-			botTextMessagReply(message, `KSampler Seed Change: Enabled`);
+			botTextMessagReply(message, `Seed Change: Enabled`);
 			break;
 		case "/scd":
 			CONFIG.SEED_CHANGE = 0;
-			botTextMessagReply(message, `KSampler Seed Change: Disabled`);
+			botTextMessagReply(message, `Seed Change: Disabled`);
 			break;
 		case "/s":
 			if (!CONFIG.MODELS[user]) {
