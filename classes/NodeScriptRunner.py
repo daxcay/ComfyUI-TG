@@ -39,14 +39,14 @@ class NodeScriptRunner:
     def start_script(self, cwd, script):
         process = subprocess.Popen(script, cwd=cwd, stdout=None, stderr=None)
         self.processes.append((process, cwd, script))
-        print(f"[COMFYUI_WA] --> Project script '{script}' in '{cwd}' started.")
+        print(f"[COMFYUI_TG] --> Project script '{script}' in '{cwd}' started.")
         return process
 
     def monitor_scripts(self):
         while self.should_run:
             for i, (process, cwd, script) in enumerate(self.processes):
                 if process.poll() is not None:  # Check if the process has terminated
-                    print(f"[COMFYUI_WA] --> Project script '{script}' in '{cwd}' terminated unexpectedly.")
+                    print(f"[COMFYUI_TG] --> Project script '{script}' in '{cwd}' terminated unexpectedly.")
                     new_process = self.start_script(cwd, script)
                     self.processes[i] = (new_process, cwd, script)
             time.sleep(1)  # Check every second
@@ -54,7 +54,7 @@ class NodeScriptRunner:
     def run(self):
         try:
             if not self.check_for_node_js():
-                print("[COMFYUI_WA] --> Node.js is not installed or not found in the system path.")
+                print("[COMFYUI_TG] --> Node.js is not installed or not found in the system path.")
                 return
             
             for cwd, script in self.scripts:
@@ -63,18 +63,18 @@ class NodeScriptRunner:
             # monitor_thread = threading.Thread(target=self.monitor_scripts)
             # monitor_thread.start()
         except FileNotFoundError:
-            print("[COMFYUI_WA] --> Node.js is not installed or not found in the system path.")
+            print("[COMFYUI_TG] --> Node.js is not installed or not found in the system path.")
         except Exception as e:
-            print(f'[COMFYUI_WA] --> NodeJS failed to start script. Error: {e}')
+            print(f'[COMFYUI_TG] --> NodeJS failed to start script. Error: {e}')
 
     def terminate_background_js(self):
         self.should_run = False  # Stop monitoring
         for process, cwd, script in self.processes:
             if process:
                 process.terminate()
-                print(f"[COMFYUI_WA] --> Project script '{script}' in '{cwd}' terminated.")
+                print(f"[COMFYUI_TG] --> Project script '{script}' in '{cwd}' terminated.")
             else:
-                print("[COMFYUI_WA] --> No background JavaScript process is running.")
+                print("[COMFYUI_TG] --> No background JavaScript process is running.")
 
     def __del__(self):
         self.terminate_background_js()

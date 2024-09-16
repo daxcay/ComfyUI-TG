@@ -11,6 +11,7 @@ let CONFIG = {
 	TOKEN: "",
 	WORKFLOWS_DIRECTORY: path.join(__dirname, "workflows"),
 	TEMP_DIRECTORY: path.join(__dirname, "temp"),
+	INPUT_DIRECTORY: path.join(__dirname, "temp"),
 	OUTPUT_DIRECTORY: path.join(__dirname, "output"),
 	WEB_DIRECTORY: path.join(__dirname, "website"),
 	API_URL: "http://127.0.0.1:8188",
@@ -80,6 +81,8 @@ args.forEach((arg) => {
 	} else if (key === "--pd") {
 		CONFIG.MAIN_DIRECTORY = value;
 		addDirectories();
+	} else if (key === "--ci") {
+		CONFIG.INPUT_DIRECTORY = value;
 	}
 });
 
@@ -103,9 +106,9 @@ function botMediaMessage(message, caption, path) {
 		CONFIG.TG.sendPhoto(message.chat.id, path, {
 			caption: caption,
 			reply_parameters: { message_id: message.message_id },
-		});			
+		});
 	} catch (error) {
-		console.log("Media File Read Error")		
+		console.log("Media File Read Error")
 	}
 }
 
@@ -203,7 +206,7 @@ function containsSettings(number, setting_number, data) {
 		const inputs = data[number].inputs;
 		let counter = 0;
 		for (const inputName in inputs) {
-			if (inputs.hasOwnProperty(inputName) &&!Array.isArray(inputs[inputName])) {
+			if (inputs.hasOwnProperty(inputName) && !Array.isArray(inputs[inputName])) {
 				if (counter == setting_number) {
 					break;
 				}
@@ -220,7 +223,7 @@ function getSettingName(number, setting_number, data) {
 		let counter = 0;
 		let name = "";
 		for (const inputName in inputs) {
-			if (inputs.hasOwnProperty(inputName) &&!Array.isArray(inputs[inputName])) {
+			if (inputs.hasOwnProperty(inputName) && !Array.isArray(inputs[inputName])) {
 				if (counter == setting_number) {
 					name = inputName;
 					break;
@@ -264,7 +267,7 @@ function editJSON(number, inputName, inputValue, data) {
 			let convertedValue;
 			if (existingValueType === "number" && Number.isInteger(existingValue)) {
 				convertedValue = parseInt(inputValue);
-			} else if (existingValueType === "number" &&!Number.isInteger(existingValue)) {
+			} else if (existingValueType === "number" && !Number.isInteger(existingValue)) {
 				convertedValue = parseFloat(inputValue);
 			} else if (existingValueType === "boolean") {
 				convertedValue = inputValue.toLowerCase() === "true";
@@ -294,7 +297,7 @@ async function sendResultToUser(message, images) {
 
 async function watch(message, data) {
 	try {
-		let user = message.from.id+"";
+		let user = message.from.id + "";
 
 		if (!CONFIG.WATCHER[user]) {
 			CONFIG.WATCHER[user] = {
@@ -322,197 +325,202 @@ async function watch(message, data) {
 			setTimeout(watch, 1000, message, data);
 		}
 	} catch (error) {
-		console.log(error);
 		botTextMessagReply(message, "Workflow failed/interrupted to generate result. Please try again!");
 	}
 }
 
-function setCommand(message) {
+function setCommand(message, origin) {
 
-	const text = message.text;
+	try {
 
-	let sliced = text.split(" ");
-	let command = sliced[0];
+		const text = message.text;
 
-	let user = message.from.id+"";
+		let sliced = text.split(" ");
+		let command = sliced[0];
 
-	switch (command) {
-		case "/c":
-		case "/start":
-			botTextMessagReply(message, allCommands());
-			break;
-		case "/wfs":
-			CONFIG.MODELS[user] = readModels(CONFIG.WORKFLOWS_DIRECTORY);
-			let models = formatModelObject(CONFIG.MODELS[user]);
-			botTextMessagReply(
-				message,
-				"Here are your workflows:\n\n" +
-				"ID | Model Name\n\n" +
-				models +
-				"\n\nTo select workfloe write /wf id"
-			);
-			break;
-		case "/wf":
-			if (!CONFIG.MODELS[user]) {
+		let user = message.from.id + "";
+
+		switch (command) {
+			case "/c":
+			case "/start":
+				botTextMessagReply(message, allCommands());
+				break;
+			case "/wfs":
 				CONFIG.MODELS[user] = readModels(CONFIG.WORKFLOWS_DIRECTORY);
-			}
-			let index = parseInt(sliced[1]);
-			if (!containsIndex(CONFIG.MODELS[user], index)) {
-				botTextMessagReply(message, "Workflows does not exists!");
-			} else {
-				CONFIG.PROMPT.MODEL[user] = CONFIG.MODELS[user][index];
-				if (!CONFIG.PROMPT.NODES[user]) {
-					CONFIG.PROMPT.NODES[user] = readJSONFile(CONFIG.PROMPT.MODEL[user]);
-				}
+				let models = formatModelObject(CONFIG.MODELS[user]);
 				botTextMessagReply(
 					message,
-					`Workflow ${CONFIG.PROMPT.MODEL[user]} selected!`
+					"Here are your workflows:\n\n" +
+					"ID | Model Name\n\n" +
+					models +
+					"\n\nTo select workfloe write /wf id"
 				);
-			}
-			break;
-		case "/wns":
-			if (!CONFIG.MODELS[user]) {
-				botTextMessagReply(message, "Workflow not selected!");
-			} else {
-				CONFIG.PROMPT.NODES[user] = readJSONFile(CONFIG.PROMPT.MODEL[user]);
-				let nodes = formatOutput(
-					extractTitleFromModel(CONFIG.PROMPT.NODES[user])
-				);
-				botTextMessagReply(
-					message,
-					"Here are your workflow nodes:\n\n" +
-					nodes +
-					"\n\nTo get the datail of a particular node write /wn id"
-				);
-			}
-			break;
-		case "/wn":
-			if (!CONFIG.MODELS[user]) {
-				botTextMessagReply(message, "Workflow not selected!");
-			} else {
-				if (!CONFIG.PROMPT.NODES[user]) {
-					CONFIG.PROMPT.NODES[user] = readJSONFile(CONFIG.PROMPT.MODEL[user]);
+				break;
+			case "/wf":
+				if (!CONFIG.MODELS[user]) {
+					CONFIG.MODELS[user] = readModels(CONFIG.WORKFLOWS_DIRECTORY);
 				}
-				let index = sliced[1];
-				if (!containsValue(Object.keys(CONFIG.PROMPT.NODES[user]), index)) {
-					botTextMessagReply(message, "Node does not exists!");
+				let index = parseInt(sliced[1]);
+				if (!containsIndex(CONFIG.MODELS[user], index)) {
+					botTextMessagReply(message, "Workflows does not exists!");
 				} else {
-					let nodes = formatInputsIgnoreArray(index, CONFIG.PROMPT.NODES[user]);
+					CONFIG.PROMPT.MODEL[user] = CONFIG.MODELS[user][index];
+					if (!CONFIG.PROMPT.NODES[user]) {
+						CONFIG.PROMPT.NODES[user] = readJSONFile(CONFIG.PROMPT.MODEL[user]);
+					}
 					botTextMessagReply(
 						message,
-						"Here are your node inputs:\n\n" +
-						nodes +
-						"\n\nTo edit a particular input write /s wns_id wn_id value"
+						`Workflow ${CONFIG.PROMPT.MODEL[user]} selected!`
 					);
 				}
-			}
-			break;
-		case "/sce":
-			CONFIG.SEED_CHANGE = 1;
-			botTextMessagReply(message, `Seed Change: Enabled`);
-			break;
-		case "/scd":
-			CONFIG.SEED_CHANGE = 0;
-			botTextMessagReply(message, `Seed Change: Disabled`);
-			break;
-		case "/s":
-			if (!CONFIG.MODELS[user]) {
-				botTextMessagReply(message, "Workflow not selected!");
-			} else {
-				if (!CONFIG.PROMPT.NODES[user]) {
+				break;
+			case "/wns":
+				if (!CONFIG.MODELS[user]) {
+					botTextMessagReply(message, "Workflow not selected!");
+				} else {
 					CONFIG.PROMPT.NODES[user] = readJSONFile(CONFIG.PROMPT.MODEL[user]);
+					let nodes = formatOutput(
+						extractTitleFromModel(CONFIG.PROMPT.NODES[user])
+					);
+					botTextMessagReply(
+						message,
+						"Here are your workflow nodes:\n\n" +
+						nodes +
+						"\n\nTo get the datail of a particular node write /wn id"
+					);
 				}
-
-				let node_number = sliced[1];
-				let setting_number = sliced[2];
-				let value = sliced[3];
-
-				if (sliced.length > 4) {
-					for (let index = 4; index < sliced.length; index++) {
-						const element = sliced[index];
-						value += " " + element;
+				break;
+			case "/wn":
+				if (!CONFIG.MODELS[user]) {
+					botTextMessagReply(message, "Workflow not selected!");
+				} else {
+					if (!CONFIG.PROMPT.NODES[user]) {
+						CONFIG.PROMPT.NODES[user] = readJSONFile(CONFIG.PROMPT.MODEL[user]);
+					}
+					let index = sliced[1];
+					if (!containsValue(Object.keys(CONFIG.PROMPT.NODES[user]), index)) {
+						botTextMessagReply(message, "Node does not exists!");
+					} else {
+						let nodes = formatInputsIgnoreArray(index, CONFIG.PROMPT.NODES[user]);
+						botTextMessagReply(
+							message,
+							"Here are your node inputs:\n\n" +
+							nodes +
+							"\n\nTo edit a particular input write /s wns_id wn_id value"
+						);
 					}
 				}
-
-				if (
-					!containsValue(Object.keys(CONFIG.PROMPT.NODES[user]), node_number)
-				) {
-					botTextMessagReply(message, "Node does not exists.");
-				} else if (
-					!containsSettings(
-						node_number,
-						setting_number,
-						CONFIG.PROMPT.NODES[user]
-					)
-				) {
-					botTextMessagReply(message, "Node setting does not exists.");
+				break;
+			case "/sce":
+				CONFIG.SEED_CHANGE = 1;
+				botTextMessagReply(message, `Seed Change: Enabled`);
+				break;
+			case "/scd":
+				CONFIG.SEED_CHANGE = 0;
+				botTextMessagReply(message, `Seed Change: Disabled`);
+				break;
+			case "/s":
+				if (!CONFIG.MODELS[user]) {
+					botTextMessagReply(message, "Workflow not selected!");
 				} else {
-					let setting_name = getSettingName(
-						node_number,
-						setting_number,
-						CONFIG.PROMPT.NODES[user]
-					);
-					editJSON(node_number, setting_name, value, CONFIG.PROMPT.NODES[user]);
-					let nodes = formatInputsIgnoreArray(
-						node_number,
-						CONFIG.PROMPT.NODES[user]
-					);
-					botTextMessagReply(message, "Node setting changed.\n\n" + nodes);
+					if (!CONFIG.PROMPT.NODES[user]) {
+						CONFIG.PROMPT.NODES[user] = readJSONFile(CONFIG.PROMPT.MODEL[user]);
+					}
+
+					let node_number = sliced[1];
+					let setting_number = sliced[2];
+					let value = sliced[3];
+
+					if (sliced.length > 4) {
+						for (let index = 4; index < sliced.length; index++) {
+							const element = sliced[index];
+							value += " " + element;
+						}
+					}
+
+					if (!containsValue(Object.keys(CONFIG.PROMPT.NODES[user]), node_number)) {
+						botTextMessagReply(message, "Node does not exists.");
+					} else if (!containsSettings(node_number, setting_number, CONFIG.PROMPT.NODES[user])) {
+						botTextMessagReply(message, "Node setting does not exists.");
+					} else {
+						let setting_name = getSettingName(
+							node_number,
+							setting_number,
+							CONFIG.PROMPT.NODES[user]
+						);
+						if (origin == "text") {
+							editJSON(node_number, setting_name, value, CONFIG.PROMPT.NODES[user]);
+						}
+						else if (origin == "photo") {
+							if (message.image) {
+								editJSON(node_number, setting_name, message.image, CONFIG.PROMPT.NODES[user]);
+							} else {
+								botTextMessagReply(message, "Error with the uploded image try again!.");
+							}
+						}
+						let nodes = formatInputsIgnoreArray(
+							node_number,
+							CONFIG.PROMPT.NODES[user]
+						);
+						botTextMessagReply(message, "Node setting changed.\n\n" + nodes);
+					}
 				}
-			}
-			break;
-		case "/r":
-			CONFIG.MODELS[user] = null;
-			CONFIG.PROMPT.MODEL[user] = null;
-			CONFIG.PROMPT.NODES[user] = null;
-			botTextMessagReply(message, "Reset Done.\n");
-			break;
-		case "/q":
-			try {
-				if (CONFIG.SEED_CHANGE) {
-					editInputs(CONFIG.PROMPT.NODES[user], "KSampler", "seed", Date.now());
-					editInputs(CONFIG.PROMPT.NODES[user], "RandomNoise", "noise_seed", Date.now());					
+				break;
+			case "/r":
+				CONFIG.MODELS[user] = null;
+				CONFIG.PROMPT.MODEL[user] = null;
+				CONFIG.PROMPT.NODES[user] = null;
+				botTextMessagReply(message, "Reset Done.\n");
+				break;
+			case "/q":
+				try {
+					if (CONFIG.SEED_CHANGE) {
+						editInputs(CONFIG.PROMPT.NODES[user], "KSampler", "seed", Date.now());
+						editInputs(CONFIG.PROMPT.NODES[user], "RandomNoise", "noise_seed", Date.now());
+					}
+					editInputs(
+						CONFIG.PROMPT.NODES[user],
+						"TG_ImageSaver",
+						"Path",
+						path.join(CONFIG.OUTPUT_DIRECTORY, user)
+					);
+					let requestOptions = {
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({ prompt: CONFIG.PROMPT.NODES[user] })
+					};
+					fetch(CONFIG.API_URL + "/prompt", requestOptions)
+						.then((response) => response.json())
+						.then((data) => {
+							botTextMessagReply(message, "Promt Submitted.\n");
+							watch(message, data);
+						})
+						.catch((error) => console.error("Error:", error));
+
+				} catch (error) {
+					console.log()
+					console.log(error)
 				}
-				editInputs(
-					CONFIG.PROMPT.NODES[user],
-					"TG_ImageSaver",
-					"Path",
-					path.join(CONFIG.OUTPUT_DIRECTORY, user)
-				);
-				let requestOptions = {
+				break;
+			case "/i":
+				fetch(CONFIG.API_URL + "/interrupt", {
 					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({ prompt: CONFIG.PROMPT.NODES[user] })
-				};
-				fetch(CONFIG.API_URL + "/prompt", requestOptions)
-					.then((response) => response.json())
+				})
 					.then((data) => {
-						botTextMessagReply(message, "Promt Submitted.\n");
-						watch(message, data);
+						botTextMessagReply(message, "Promt Interrupted.\n\n");
 					})
 					.catch((error) => console.error("Error:", error));
-					
-			} catch (error) {
-				console.log()
-				console.log(error)				
-			}
-			break;
-		case "/i":
-			fetch(CONFIG.API_URL + "/interrupt", {
-				method: "POST",
-			})
-				.then((data) => {
-					botTextMessagReply(message, "Promt Interrupted.\n\n");
-				})
-				.catch((error) => console.error("Error:", error));
-			break;
-		default:
-			if (mode == 2) {
-				botTextMessagReply(message, `Invalid command. Message /c`);
-			}
-			break;
+				break;
+			default:
+				if (mode == 2) {
+					botTextMessagReply(message, `Invalid command. Message /c`);
+				}
+				break;
+		}
+	} catch (error) {
+		console.log(error)
 	}
 }
 
@@ -523,8 +531,23 @@ if (CONFIG.TOKEN != "bot_token") {
 		console.log("[COMFY_TG]: Telegram bot is live!");
 		CONFIG.READY = true;
 		CONFIG.TG = new TelegramBot(CONFIG.TOKEN, { polling: true });
+		CONFIG.TG.on("photo", async (msg) => {
+			try {
+				console.log(msg)
+				if (msg.photo && msg.photo.length > 0) {
+					let photoId = msg.photo[msg.photo.length - 1].file_id
+					let command = msg.caption
+					let photoPath = await CONFIG.TG.downloadFile(photoId, CONFIG.INPUT_DIRECTORY)
+					msg.text = command
+					msg.image = path.basename(photoPath)
+					setCommand(msg, "photo");
+				}
+			} catch (error) {
+				console.log(error)
+			}
+		});
 		CONFIG.TG.on("message", (msg) => {
-			setCommand(msg);
+			setCommand(msg, "text");
 		});
 	} catch (error) {
 		CONFIG.READY = false;

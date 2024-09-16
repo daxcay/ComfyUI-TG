@@ -51,13 +51,13 @@ class NodeInstaller:
 
         progress_bar.close()
         if total_size != 0 and progress_bar.n != total_size:
-            print("[COMFYUI_WA] --> An error occurred during the download.")
+            print("[COMFYUI_TG] --> An error occurred during the download.")
         else:
-            print("[COMFYUI_WA] --> Node.js installer downloaded successfully.")
+            print("[COMFYUI_TG] --> Node.js installer downloaded successfully.")
 
     def install_nodejs(self):
         if self.installer_path is None:
-            print("[COMFYUI_WA] --> Node.js installer has not been downloaded yet.")
+            print("[COMFYUI_TG] --> Node.js installer has not been downloaded yet.")
             return
         process = subprocess.Popen([self.installer_path], shell=True)
         process.wait()
@@ -77,9 +77,9 @@ class NodeInstaller:
                 pass
             process.stdout.close()
             process.wait()
-            print(f"\n[COMFYUI_WA] --> npm package '{package_name}' installed successfully.")
+            print(f"\n[COMFYUI_TG] --> npm package '{package_name}' installed successfully.")
         except subprocess.CalledProcessError as e:
-            print(f"[COMFYUI_WA] --> An error occurred: {e}")
+            print(f"[COMFYUI_TG] --> An error occurred: {e}")
 
     def get_dependencies_and_production_scripts(self, directory_path):
         folders_with_info = {}
@@ -100,8 +100,8 @@ class NodeInstaller:
                     folders_with_info[folder] = {'dependencies': None, 'production': None}
             return folders_with_info
         except FileNotFoundError:
-            return f"[COMFYUI_WA] --> The directory {directory_path} does not exist."
+            return f"[COMFYUI_TG] --> The directory {directory_path} does not exist."
         except PermissionError:
-            return f"[COMFYUI_WA] --> Permission denied to access the directory {directory_path}."
+            return f"[COMFYUI_TG] --> Permission denied to access the directory {directory_path}."
         except Exception as e:
-            return f"[COMFYUI_WA] --> An error occurred: {e}"
+            return f"[COMFYUI_TG] --> An error occurred: {e}"

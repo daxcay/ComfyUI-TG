@@ -31,6 +31,8 @@ from .classes.NodeScriptRunner import NodeScriptRunner
 from .classes.TG_ImageSaver import N_CLASS_MAPPINGS as TG_ImageSaverMappins, N_DISPLAY_NAME_MAPPINGS as TG_ImageSaverNameMappings
 from .config import *
 
+import folder_paths
+
 if NODE_JS_ACTIVE:
 
     print("=============================================================================================================")
@@ -40,11 +42,13 @@ if NODE_JS_ACTIVE:
     nodeScriptRunner = NodeScriptRunner()
 
     DATA_FOLDER = './Telegram'
+    INPUT_FOLDER = folder_paths.get_input_directory()
     CONFIG_FILE = os.path.join(DATA_FOLDER, 'telegram.json')
 
     NODE_JS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), NODE_JS_FOLDER)
 
     PD = os.path.abspath(DATA_FOLDER)
+    CI = os.path.abspath(INPUT_FOLDER)
 
     if not os.path.exists(DATA_FOLDER):
         os.makedirs(DATA_FOLDER)
@@ -58,7 +62,7 @@ if NODE_JS_ACTIVE:
     
     updates = {
         "scripts" : {
-            "production": f"node app.js --pd={PD}"
+            "production": f"node app.js --pd={PD} --ci={CI}"
         }
     }
 
