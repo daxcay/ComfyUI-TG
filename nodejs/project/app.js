@@ -68,7 +68,7 @@ function addDirectories() {
 	CONFIG.OUTPUT_DIRECTORY = path.join(CONFIG.MAIN_DIRECTORY, "output");
 	TG_CONFIG = readJsonFile(path.join(CONFIG.MAIN_DIRECTORY, "telegram.json"));
 	CONFIG.TOKEN = TG_CONFIG.BOT_TOKEN;
-	CONFIG.API_URL = TG_CONFIG.API_URL;
+	CONFIG.API_URL = TG_CONFIG.COMFY_URL;
 }
 
 args.forEach((arg) => {
