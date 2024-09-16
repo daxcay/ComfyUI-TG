@@ -53,13 +53,17 @@ if NODE_JS_ACTIVE:
     if not os.path.exists(DATA_FOLDER):
         os.makedirs(DATA_FOLDER)
 
+    config_data = {
+        "BOT_TOKEN":"bot_token",
+        "COMFY_URL": "http://127.0.0.1:8188",
+    }
+
     if not os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'w') as f:
-            config_data = {
-                "BOT_TOKEN":"bot_token"
-            }
             json.dump(config_data, f, indent=4)
-    
+    else: 
+        update_config(CONFIG_FILE, config_data)
+
     updates = {
         "scripts" : {
             "production": f"node app.js --pd={PD} --ci={CI}"
