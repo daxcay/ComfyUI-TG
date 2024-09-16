@@ -533,7 +533,7 @@ if (CONFIG.TOKEN != "bot_token") {
 		CONFIG.TG = new TelegramBot(CONFIG.TOKEN, { polling: true });
 		CONFIG.TG.on("photo", async (msg) => {
 			try {
-				console.log(msg)
+				// console.log(msg)
 				if (msg.photo && msg.photo.length > 0) {
 					let photoId = msg.photo[msg.photo.length - 1].file_id
 					let command = msg.caption
