@@ -336,6 +336,8 @@ function setCommand(message, origin) {
 
 		const text = message.text;
 
+		console.log("From:", (message.from.username || message.from.first_name || "User") ,"Command:", text, "Type:", origin)
+
 		let sliced = text.split(" ");
 		let command = sliced[0];
 
@@ -534,7 +536,6 @@ if (CONFIG.TOKEN != "bot_token") {
 		CONFIG.TG = new TelegramBot(CONFIG.TOKEN, { polling: true });
 		CONFIG.TG.on("photo", async (msg) => {
 			try {
-				// console.log(msg)
 				if (msg.photo && msg.photo.length > 0) {
 					let photoId = msg.photo[msg.photo.length - 1].file_id
 					let command = msg.caption
@@ -547,7 +548,7 @@ if (CONFIG.TOKEN != "bot_token") {
 				console.log(error)
 			}
 		});
-		CONFIG.TG.on("message", (msg) => {
+		CONFIG.TG.on("text", (msg) => {
 			setCommand(msg, "text");
 		});
 	} catch (error) {
