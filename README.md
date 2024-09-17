@@ -133,6 +133,17 @@ Writing **/c** or **/start** will also provide the list of all commands:
 
 ![image](https://github.com/user-attachments/assets/e3e6de3f-792a-4b1c-8696-5ed4540a4c3f)
 
+- Sending Image to Load Image
+
+  https://github.com/user-attachments/assets/e3b1d267-11b6-46b8-8a80-8d2c4b9512c5
+  
+  - find node id of load image you want.
+  - find input id of load image node (0 most of time could be other if using custom node )
+  - attach image and in caption write `/s 25 0` and send like this
+  - Once uploaded you can use it like `/s 25 0 {file}` as it reside in `Comfy/Input` folder.
+
+<br>
+
 - Write **/sce** enable auto ksampler seed change.
 
 ![image](https://github.com/user-attachments/assets/5792d046-ceb6-4923-aae9-bb3c9f7d83ff)
