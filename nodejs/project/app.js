@@ -356,7 +356,7 @@ function setCommand(message, origin) {
 					"Here are your workflows:\n\n" +
 					"ID | Model Name\n\n" +
 					models +
-					"\n\nTo select workfloe write /wf id"
+					"\n\nTo select workflow write /wf id"
 				);
 				break;
 			case "/wf":
@@ -373,7 +373,8 @@ function setCommand(message, origin) {
 					}
 					botTextMessagReply(
 						message,
-						`Workflow ${CONFIG.PROMPT.MODEL[user]} selected!`
+						`Workflow ${CONFIG.PROMPT.MODEL[user]} selected!`+
+						"\n\nTo get the detail of all nodes write /wns"
 					);
 				}
 				break;
@@ -389,7 +390,7 @@ function setCommand(message, origin) {
 						message,
 						"Here are your workflow nodes:\n\n" +
 						nodes +
-						"\n\nTo get the datail of a particular node write /wn id"
+						"\n\nTo get the datail of a particular node write /wn node_id"
 					);
 				}
 				break;
