@@ -67,6 +67,15 @@ This project enables the use of ComfyUI Workflows in Telegram.
 
 # Setup
 
+## Enable Dev Mode
+
+>[!IMPORTANT]
+> #### **Enable dev mode and save workflow in `api` format to make it compatible.**
+
+![download (1)](https://github.com/user-attachments/assets/15d6fda5-86af-4514-9884-32e7bb4cde84)
+
+<br>
+
 ### Getting bot token from BotFather
 
 ![Untitled design (6)](https://github.com/user-attachments/assets/ea381db3-4d28-4535-9c87-490ff2af9df4)
