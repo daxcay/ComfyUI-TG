@@ -21,6 +21,27 @@
   
 </div>
 
+# Security hardening (this fork)
+
+This fork adds four security changes on top of upstream `beb0d8e`:
+
+1. **Telegram user allowlist.** Only Telegram user ids listed in `ALLOWED_USER_IDS` in `telegram.json` can use the bot. Every other update is dropped silently.
+2. **Private chats only.** Group and channel messages are ignored, even from allowlisted users. This replaces upstream's group-chat support.
+3. **Dashboard is localhost-only.** The web dashboard binds to `127.0.0.1` and has no authentication. To reach it from another machine, use an SSH tunnel, for example `ssh -L 4001:127.0.0.1:4001 user@host`, and then open `http://localhost:4001`.
+4. **Path traversal fixes and image delivery via the ComfyUI API.** Workflow names in `POST /workflows` and `DELETE /workflows/:name` are reduced to a bare file name. Result images are fetched through ComfyUI's `/view` endpoint. If a workflow has no `TG_ImageSaver` node, the first stock `SaveImage` node is used.
+
+`ALLOWED_USER_IDS` is an array of numeric Telegram user ids:
+
+```json
+{
+    "BOT_TOKEN": "bot_token",
+    "COMFY_URL": "http://127.0.0.1:8188",
+    "ALLOWED_USER_IDS": [123456789]
+}
+```
+
+If the list is empty or missing, **nobody** can use the bot (it fails closed). The generated `telegram.json` template now ships with `"ALLOWED_USER_IDS": []`, so add your own id before you use the bot.
+
 # About The Project
 
 This project enables the use of ComfyUI Workflows in Telegram.
@@ -115,6 +136,47 @@ Now upload it in workflow section
 ![image](https://github.com/user-attachments/assets/d0cae95f-3dea-42d5-9948-69093486ab52)
 
 <br />
+
+# Easy mode
+
+Easy mode is on by default in this fork. Any plain text message (one that does not start with `/`) from an allowlisted user becomes the prompt. The bot then:
+
+- selects the easy-mode workflow (`EASY_WORKFLOW_INDEX`, default `0`) if no suitable workflow is selected,
+- prefixes the text with `EASY_PROMPT_PREFIX`, unless the text already starts with the prefix's first tag,
+- sets the negative prompt to `EASY_NEGATIVE`, picks a random seed and sets `EASY_STEPS` steps,
+- queues it, replies "Making it… about a minute." and sends the image back captioned with your idea.
+
+While a picture is being made, or anything else is queued in ComfyUI, new ideas get a "Still making the last picture" reply instead of being queued. The busy guard clears itself after 5 minutes.
+
+The easy-mode workflow must be in API format with node `3` as the positive `CLIPTextEncode`, node `4` as the negative `CLIPTextEncode`, node `5` as the `EmptyLatentImage` and node `6` as the `KSampler`.
+
+## Easy mode commands
+
+These are also registered as the bot's command menu (`setMyCommands`) at startup. Commands sent as `/cmd@yourbot` are accepted too.
+
+| Command | What it does |
+|---|---|
+| `/help` or `/start` | Short easy-mode help |
+| `/again` | Same idea, new seed |
+| `/wide` | Landscape (1216x832) for the next pictures |
+| `/tall` | Portrait (832x1216) for the next pictures, the default |
+| `/stop` | Cancel the current picture (same as `/i`) |
+
+`/c` still lists the full command set below, and `/wf`, `/s`, `/q` and the rest are unchanged. Orientation and the last idea are kept in memory and reset when the bot restarts.
+
+## Easy mode settings in `telegram.json`
+
+Every key is optional. When a key is missing, the default shown is used.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `EASY_MODE` | `true` | Set to `false` to turn easy mode off. Plain text is then ignored, the easy commands are not recognised, `/start` shows the classic command list and no command menu is registered. |
+| `EASY_WORKFLOW_INDEX` | `0` | Index (as listed by `/wfs`) of the workflow to use for easy mode |
+| `EASY_PROMPT_PREFIX` | `"score_9, score_8_up, score_7_up, "` | Text put in front of every idea. Use `""` for no prefix. |
+| `EASY_NEGATIVE` | `"score_4, score_5, score_6, blurry, lowres, bad anatomy, extra limbs, deformed hands, text, watermark, signature"` | Negative prompt |
+| `EASY_STEPS` | `25` | Sampler steps |
+
+The default prefix and negative are tuned for Pony-style SDXL models. Change them to suit your model.
 
 # Telegram Commands
 

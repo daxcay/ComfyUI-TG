@@ -56,6 +56,12 @@ if NODE_JS_ACTIVE:
     config_data = {
         "BOT_TOKEN":"bot_token",
         "COMFY_URL": "http://127.0.0.1:8188",
+        "ALLOWED_USER_IDS": [],
+        "EASY_MODE": True,
+        "EASY_WORKFLOW_INDEX": 0,
+        "EASY_PROMPT_PREFIX": "score_9, score_8_up, score_7_up, ",
+        "EASY_NEGATIVE": "score_4, score_5, score_6, blurry, lowres, bad anatomy, extra limbs, deformed hands, text, watermark, signature",
+        "EASY_STEPS": 25,
     }
 
     if not os.path.exists(CONFIG_FILE):

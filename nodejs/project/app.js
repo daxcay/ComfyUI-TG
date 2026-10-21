@@ -26,6 +26,7 @@ let CONFIG = {
 		NODES: {},
 	},
 	WATCHER: {},
+	EASY: {}, // easy mode state per user: { last, width, height, busy }
 };
 
 const deleteContentsInsideDirectory = async (dirPath) => {
@@ -69,6 +70,41 @@ function addDirectories() {
 	TG_CONFIG = readJsonFile(path.join(CONFIG.MAIN_DIRECTORY, "telegram.json"));
 	CONFIG.TOKEN = TG_CONFIG.BOT_TOKEN;
 	CONFIG.API_URL = TG_CONFIG.COMFY_URL;
+	// Allowlist: only these Telegram user ids may use the bot (fail closed if empty or missing)
+	CONFIG.ALLOWED_USER_IDS = (TG_CONFIG.ALLOWED_USER_IDS || []).map(String);
+	CONFIG.EASY_SETTINGS = loadEasySettings(TG_CONFIG);
+}
+
+// Easy-mode settings from telegram.json; built-in defaults apply when a key is absent.
+// The default prefix and negative are tuned for Pony-style SDXL models.
+function loadEasySettings(cfg) {
+	cfg = cfg || {};
+	const has = (k) => Object.prototype.hasOwnProperty.call(cfg, k) && cfg[k] !== null;
+	const steps = parseInt(cfg.EASY_STEPS, 10);
+	const index = parseInt(cfg.EASY_WORKFLOW_INDEX, 10);
+	return {
+		enabled: !(cfg.EASY_MODE === false || String(cfg.EASY_MODE).toLowerCase() === "false"),
+		workflowIndex: Number.isInteger(index) && index >= 0 ? index : 0,
+		prefix: has("EASY_PROMPT_PREFIX") ? String(cfg.EASY_PROMPT_PREFIX) : "score_9, score_8_up, score_7_up, ",
+		negative: has("EASY_NEGATIVE") ? String(cfg.EASY_NEGATIVE) : "score_4, score_5, score_6, blurry, lowres, bad anatomy, extra limbs, deformed hands, text, watermark, signature",
+		steps: Number.isInteger(steps) && steps > 0 ? steps : 25,
+	};
+}
+
+function easySettings() {
+	if (!CONFIG.EASY_SETTINGS) CONFIG.EASY_SETTINGS = loadEasySettings(TG_CONFIG);
+	return CONFIG.EASY_SETTINGS;
+}
+
+// Silently drop anything not from an allowlisted user in a private chat
+function isAllowed(msg) {
+	try {
+		const ok = !!(msg && msg.from && msg.chat && msg.chat.type === "private" &&
+			(CONFIG.ALLOWED_USER_IDS || []).includes(String(msg.from.id)) &&
+			String(msg.chat.id) === String(msg.from.id));
+		if (!ok) console.log("[COMFY_TG] dropped update from id", msg && msg.from && msg.from.id, "chat type", msg && msg.chat && msg.chat.type);
+		return ok;
+	} catch (e) { return false; }
 }
 
 args.forEach((arg) => {
@@ -114,9 +150,9 @@ function botMediaMessage(message, caption, path) {
 }
 
 function botTextMessagReply(message, text) {
-	CONFIG.TG.sendMessage(message.chat.id, text, {
+	CONFIG.TG.sendMessage(message.chat.id, text, message.message_id ? {
 		reply_parameters: { message_id: message.message_id },
-	});
+	} : {});
 }
 
 function allCommands() {
@@ -290,8 +326,16 @@ function editJSON(number, inputName, inputValue, data) {
 async function sendResultToUser(message, images) {
 	if (images.length > 0) {
 		images.forEach(async (image) => {
-			let file_path = path.join(image.subfolder, image.filename);
-			botMediaMessage(message, "Here is your image", file_path);
+			// Fetch the image over the local ComfyUI API instead of reading the filesystem
+			try {
+				const q = new URLSearchParams({ filename: image.filename, subfolder: image.subfolder || "", type: image.type || "output" });
+				const r = await fetch(`${CONFIG.API_URL}/view?${q}`);
+				const buf = Buffer.from(await r.arrayBuffer());
+				const opts = { caption: message._caption || "Here is your image" }; // easy mode captions the image with the idea
+				if (message.message_id) opts.reply_parameters = { message_id: message.message_id };
+				await CONFIG.TG.sendPhoto(message.chat.id, buf, opts, { filename: image.filename, contentType: "image/png" });
+				console.log("[COMFY_TG] image sent", image.filename);
+			} catch (e) { console.log("[COMFY_TG] send image failed", e && e.message); }
 		});
 	}
 }
@@ -312,11 +356,18 @@ async function watch(message, data) {
 		);
 
 		if (res && res[id]) {
+			if (message._done) message._done(); // easy mode: render finished, release the busy guard
 			let status = res[id].status;
 			if (status.completed && status.status_str === "success") {
 				let nodeid = getNodeID(CONFIG.PROMPT.NODES[user], "TG_ImageSaver");
+				// Fall back to the first stock SaveImage node when no TG_ImageSaver is present
+				if (nodeid == -1) {
+					for (const k in CONFIG.PROMPT.NODES[user]) {
+						if (CONFIG.PROMPT.NODES[user][k].class_type === "SaveImage") { nodeid = k; break; }
+					}
+				}
 				if (nodeid != -1) {
-					let images = res[id].outputs[nodeid].images || [];
+					let images = (res[id].outputs[nodeid] || {}).images || [];
 					sendResultToUser(message, images);
 				}
 			} else {
@@ -326,11 +377,106 @@ async function watch(message, data) {
 			setTimeout(watch, 1000, message, data);
 		}
 	} catch (error) {
+		if (message._done) message._done();
 		botTextMessagReply(message, "Workflow failed/interrupted to generate result. Please try again!");
 	}
 }
 
+// ================================== EASY MODE =====================================
+// Plain text (anything not starting with "/") is used as the prompt.
+// The easy-mode workflow must have nodes 3 (positive CLIPTextEncode), 4 (negative CLIPTextEncode),
+// 5 (EmptyLatentImage) and 6 (KSampler).
+// Prefix, negative, steps, workflow index and the on/off switch come from easySettings().
+const EASY_SIZES = { tall: [832, 1216], wide: [1216, 832] };
+
+function easyHelp() {
+	return "Just type what you want to see, e.g. a diver over a coral reef with clownfish. The picture comes back in about a minute.\n" +
+		"/again: same idea, new variation.\n" +
+		"/wide or /tall: landscape or portrait for the next pictures (portrait is the default).\n" +
+		"/stop: cancel the picture that is being made.\n" +
+		"Power commands (/wf, /s, /q) still work; /c lists them.";
+}
+
+function easyState(user) {
+	if (!CONFIG.EASY[user]) CONFIG.EASY[user] = { last: null, width: EASY_SIZES.tall[0], height: EASY_SIZES.tall[1], busy: false };
+	return CONFIG.EASY[user];
+}
+
+function easyHasNodes(nodes) {
+	return !!(nodes && nodes["3"] && nodes["4"] && nodes["5"] && nodes["6"] &&
+		nodes["3"].class_type === "CLIPTextEncode" && nodes["4"].class_type === "CLIPTextEncode" &&
+		nodes["5"].class_type === "EmptyLatentImage" && nodes["6"].class_type === "KSampler");
+}
+
+async function comfyBusy() {
+	try {
+		const q = await fetch(CONFIG.API_URL + "/queue").then((r) => r.json());
+		return ((q.queue_running || []).length + (q.queue_pending || []).length) > 0;
+	} catch (e) { return false; }
+}
+
+async function easyRender(message, idea) {
+	if (!isAllowed(message)) return; // allowlist in front of easy mode too
+	if (!easySettings().enabled) return;
+	const user = message.from.id + "";
+	const st = easyState(user);
+	idea = String(idea || "").trim();
+	if (!idea) { botTextMessagReply(message, "Type an idea first, e.g. a turtle swimming over a reef."); return; }
+	if (st.busy || await comfyBusy()) {
+		botTextMessagReply(message, "Still making the last picture. Wait for it to land, or send /stop to cancel it.");
+		return;
+	}
+	st.busy = true;
+	const release = () => { st.busy = false; clearTimeout(st.timer); };
+	st.timer = setTimeout(release, 5 * 60 * 1000); // safety: never stay stuck
+	try {
+		// auto-select the easy-mode workflow if nothing usable is selected
+		if (!CONFIG.PROMPT.MODEL[user] || !easyHasNodes(CONFIG.PROMPT.NODES[user])) {
+			CONFIG.MODELS[user] = readModels(CONFIG.WORKFLOWS_DIRECTORY);
+			CONFIG.PROMPT.MODEL[user] = CONFIG.MODELS[user][easySettings().workflowIndex];
+			CONFIG.PROMPT.NODES[user] = readJSONFile(CONFIG.PROMPT.MODEL[user]);
+		}
+		const nodes = CONFIG.PROMPT.NODES[user];
+		if (!easyHasNodes(nodes)) throw new Error("easy-mode workflow does not have the expected node layout");
+		const es = easySettings();
+		// skip the prefix when the idea already starts with its first tag
+		const firstTag = es.prefix.split(",")[0].trim().toLowerCase();
+		const pos = (!firstTag || idea.toLowerCase().startsWith(firstTag)) ? idea : es.prefix + idea;
+		nodes["3"].inputs.text = pos;
+		nodes["4"].inputs.text = es.negative;
+		nodes["5"].inputs.width = st.width;
+		nodes["5"].inputs.height = st.height;
+		nodes["5"].inputs.batch_size = 1;
+		nodes["6"].inputs.seed = Math.floor(Math.random() * 1e15);
+		nodes["6"].inputs.steps = es.steps;
+		st.last = idea;
+		const r = await fetch(CONFIG.API_URL + "/prompt", {
+			method: "POST", headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ prompt: nodes }),
+		});
+		const data = await r.json();
+		if (!data || !data.prompt_id) throw new Error("ComfyUI did not accept the prompt: " + JSON.stringify(data).slice(0, 300));
+		botTextMessagReply(message, "Making it\u2026 about a minute.");
+		if (!message._caption) message._caption = idea.length > 900 ? idea.slice(0, 900) + "\u2026" : idea;
+		message._done = release;
+		watch(message, data);
+	} catch (e) {
+		release();
+		console.log("[COMFY_TG] easy render failed", e && e.message);
+		botTextMessagReply(message, "Sorry, that one failed to start. Try again in a moment.");
+	}
+}
+
+function easySetSize(message, which) {
+	const st = easyState(message.from.id + "");
+	[st.width, st.height] = EASY_SIZES[which];
+	botTextMessagReply(message, which === "wide"
+		? "Wide (landscape) from now on. Type an idea, or /again."
+		: "Tall (portrait) from now on. Type an idea, or /again.");
+}
+
 function setCommand(message, origin) {
+	if (!isAllowed(message)) return; // defence in depth: re-check the allowlist
 
 	try {
 
@@ -339,14 +485,36 @@ function setCommand(message, origin) {
 		console.log("From:", (message.from.username || message.from.first_name || "User") ,"Command:", text, "Type:", origin)
 
 		let sliced = text.split(" ");
-		let command = sliced[0];
+		let command = sliced[0].replace(/@\w+$/, ""); // accept /cmd@botname
 
 		let user = message.from.id + "";
 
+		// EASY_MODE off: /start shows the classic command list and the easy commands are not recognised
+		if (!easySettings().enabled) {
+			if (command === "/start") command = "/c";
+			else if (["/help", "/again", "/wide", "/tall", "/stop"].includes(command)) command = "";
+		}
+
 		switch (command) {
 			case "/c":
-			case "/start":
 				botTextMessagReply(message, allCommands());
+				break;
+			// easy mode commands
+			case "/start":
+			case "/help":
+				botTextMessagReply(message, easyHelp());
+				break;
+			case "/again": {
+				const st = easyState(user);
+				if (!st.last) botTextMessagReply(message, "Nothing to repeat yet. Type an idea first.");
+				else easyRender(message, st.last);
+				break;
+			}
+			case "/wide":
+				easySetSize(message, "wide");
+				break;
+			case "/tall":
+				easySetSize(message, "tall");
 				break;
 			case "/wfs":
 				CONFIG.MODELS[user] = readModels(CONFIG.WORKFLOWS_DIRECTORY);
@@ -508,6 +676,7 @@ function setCommand(message, origin) {
 					console.log(error)
 				}
 				break;
+			case "/stop": // easy alias for /i
 			case "/i":
 				fetch(CONFIG.API_URL + "/interrupt", {
 					method: "POST",
@@ -518,7 +687,12 @@ function setCommand(message, origin) {
 					.catch((error) => console.error("Error:", error));
 				break;
 			default:
-				if (mode == 2) {
+				// plain text (no leading "/") is an easy-mode prompt
+				if (easySettings().enabled && origin == "text" && !text.trim().startsWith("/")) {
+					easyRender(message, text);
+					break;
+				}
+				if (typeof mode !== "undefined" && mode == 2) {
 					botTextMessagReply(message, `Invalid command. Message /c`);
 				}
 				break;
@@ -535,7 +709,16 @@ if (CONFIG.TOKEN != "bot_token") {
 		console.log("[COMFY_TG]: Telegram bot is live!");
 		CONFIG.READY = true;
 		CONFIG.TG = new TelegramBot(CONFIG.TOKEN, { polling: true });
+		// short command menu for easy mode
+		if (easySettings().enabled) CONFIG.TG.setMyCommands([
+			{ command: "help", description: "How to use: just type an idea" },
+			{ command: "again", description: "Same idea, new variation" },
+			{ command: "wide", description: "Landscape pictures (1216x832)" },
+			{ command: "tall", description: "Portrait pictures (832x1216, default)" },
+			{ command: "stop", description: "Cancel the picture being made" },
+		]).then(() => console.log("[COMFY_TG] command menu set")).catch((e) => console.log("[COMFY_TG] setMyCommands failed", e && e.message));
 		CONFIG.TG.on("photo", async (msg) => {
+			if (!isAllowed(msg)) return; // check before downloading anything
 			try {
 				if (msg.photo && msg.photo.length > 0) {
 					let photoId = msg.photo[msg.photo.length - 1].file_id
@@ -550,6 +733,7 @@ if (CONFIG.TOKEN != "bot_token") {
 			}
 		});
 		CONFIG.TG.on("text", (msg) => {
+			if (!isAllowed(msg)) return;
 			setCommand(msg, "text");
 		});
 	} catch (error) {
@@ -569,7 +753,7 @@ CONFIG.EXPRESS.get("/ready", (req, res) => {
 CONFIG.EXPRESS.post("/workflows", async (req, res) => {
 	try {
 		const data = req.body;
-		const filename = data.name;
+		const filename = path.basename(String(data.name)); // strip directories to prevent path traversal
 		const filePath = path.join(CONFIG.WORKFLOWS_DIRECTORY, filename);
 		await fsp.mkdir(CONFIG.WORKFLOWS_DIRECTORY, { recursive: true });
 		await fsp.writeFile(filePath, JSON.stringify(data.data, null, 2), "utf8");
@@ -609,7 +793,7 @@ CONFIG.EXPRESS.get("/workflows", async (req, res) => {
 CONFIG.EXPRESS.delete("/workflows/:name", async (req, res) => {
 	try {
 		const { name } = req.params;
-		const filePath = path.join(CONFIG.WORKFLOWS_DIRECTORY, name + ".json");
+		const filePath = path.join(CONFIG.WORKFLOWS_DIRECTORY, path.basename(String(name)) + ".json"); // prevent path traversal
 		await fsp.unlink(filePath);
 		res
 			.status(200)
@@ -631,7 +815,7 @@ let ON = true;
 if (ON) {
 	createDirectories(CONFIG);
 
-	CONFIG.EXPRESS.listen(CONFIG.PORT, () => {
+	CONFIG.EXPRESS.listen(CONFIG.PORT, "127.0.0.1", () => { // dashboard is reachable from localhost only
 		console.log(`Server running at http://localhost:${CONFIG.PORT}`);
 	});
 }
