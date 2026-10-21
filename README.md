@@ -21,6 +21,27 @@
   
 </div>
 
+# Security hardening (this fork)
+
+This fork adds four security changes on top of upstream `beb0d8e`:
+
+1. **Telegram user allowlist.** Only Telegram user ids listed in `ALLOWED_USER_IDS` in `telegram.json` can use the bot. Every other update is dropped silently.
+2. **Private chats only.** Group and channel messages are ignored, even from allowlisted users. This replaces upstream's group-chat support.
+3. **Dashboard is localhost-only.** The web dashboard binds to `127.0.0.1` and has no authentication. To reach it from another machine, use an SSH tunnel, for example `ssh -L 4001:127.0.0.1:4001 user@host`, and then open `http://localhost:4001`.
+4. **Path traversal fixes and image delivery via the ComfyUI API.** Workflow names in `POST /workflows` and `DELETE /workflows/:name` are reduced to a bare file name. Result images are fetched through ComfyUI's `/view` endpoint. If a workflow has no `TG_ImageSaver` node, the first stock `SaveImage` node is used.
+
+`ALLOWED_USER_IDS` is an array of numeric Telegram user ids:
+
+```json
+{
+    "BOT_TOKEN": "bot_token",
+    "COMFY_URL": "http://127.0.0.1:8188",
+    "ALLOWED_USER_IDS": [123456789]
+}
+```
+
+If the list is empty or missing, **nobody** can use the bot (it fails closed). The generated `telegram.json` template now ships with `"ALLOWED_USER_IDS": []`, so add your own id before you use the bot.
+
 # About The Project
 
 This project enables the use of ComfyUI Workflows in Telegram.

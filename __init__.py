@@ -56,6 +56,7 @@ if NODE_JS_ACTIVE:
     config_data = {
         "BOT_TOKEN":"bot_token",
         "COMFY_URL": "http://127.0.0.1:8188",
+        "ALLOWED_USER_IDS": [],
     }
 
     if not os.path.exists(CONFIG_FILE):

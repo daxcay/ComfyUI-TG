@@ -69,6 +69,19 @@ function addDirectories() {
 	TG_CONFIG = readJsonFile(path.join(CONFIG.MAIN_DIRECTORY, "telegram.json"));
 	CONFIG.TOKEN = TG_CONFIG.BOT_TOKEN;
 	CONFIG.API_URL = TG_CONFIG.COMFY_URL;
+	// Allowlist: only these Telegram user ids may use the bot (fail closed if empty or missing)
+	CONFIG.ALLOWED_USER_IDS = (TG_CONFIG.ALLOWED_USER_IDS || []).map(String);
+}
+
+// Silently drop anything not from an allowlisted user in a private chat
+function isAllowed(msg) {
+	try {
+		const ok = !!(msg && msg.from && msg.chat && msg.chat.type === "private" &&
+			(CONFIG.ALLOWED_USER_IDS || []).includes(String(msg.from.id)) &&
+			String(msg.chat.id) === String(msg.from.id));
+		if (!ok) console.log("[COMFY_TG] dropped update from id", msg && msg.from && msg.from.id, "chat type", msg && msg.chat && msg.chat.type);
+		return ok;
+	} catch (e) { return false; }
 }
 
 args.forEach((arg) => {
@@ -290,8 +303,13 @@ function editJSON(number, inputName, inputValue, data) {
 async function sendResultToUser(message, images) {
 	if (images.length > 0) {
 		images.forEach(async (image) => {
-			let file_path = path.join(image.subfolder, image.filename);
-			botMediaMessage(message, "Here is your image", file_path);
+			// Fetch the image over the local ComfyUI API instead of reading the filesystem
+			try {
+				const q = new URLSearchParams({ filename: image.filename, subfolder: image.subfolder || "", type: image.type || "output" });
+				const r = await fetch(`${CONFIG.API_URL}/view?${q}`);
+				const buf = Buffer.from(await r.arrayBuffer());
+				await CONFIG.TG.sendPhoto(message.chat.id, buf, { caption: "Here is your image", reply_parameters: { message_id: message.message_id } }, { filename: image.filename, contentType: "image/png" });
+			} catch (e) { console.log("[COMFY_TG] send image failed", e && e.message); }
 		});
 	}
 }
@@ -315,8 +333,14 @@ async function watch(message, data) {
 			let status = res[id].status;
 			if (status.completed && status.status_str === "success") {
 				let nodeid = getNodeID(CONFIG.PROMPT.NODES[user], "TG_ImageSaver");
+				// Fall back to the first stock SaveImage node when no TG_ImageSaver is present
+				if (nodeid == -1) {
+					for (const k in CONFIG.PROMPT.NODES[user]) {
+						if (CONFIG.PROMPT.NODES[user][k].class_type === "SaveImage") { nodeid = k; break; }
+					}
+				}
 				if (nodeid != -1) {
-					let images = res[id].outputs[nodeid].images || [];
+					let images = (res[id].outputs[nodeid] || {}).images || [];
 					sendResultToUser(message, images);
 				}
 			} else {
@@ -331,6 +355,7 @@ async function watch(message, data) {
 }
 
 function setCommand(message, origin) {
+	if (!isAllowed(message)) return; // defence in depth: re-check the allowlist
 
 	try {
 
@@ -536,6 +561,7 @@ if (CONFIG.TOKEN != "bot_token") {
 		CONFIG.READY = true;
 		CONFIG.TG = new TelegramBot(CONFIG.TOKEN, { polling: true });
 		CONFIG.TG.on("photo", async (msg) => {
+			if (!isAllowed(msg)) return; // check before downloading anything
 			try {
 				if (msg.photo && msg.photo.length > 0) {
 					let photoId = msg.photo[msg.photo.length - 1].file_id
@@ -550,6 +576,7 @@ if (CONFIG.TOKEN != "bot_token") {
 			}
 		});
 		CONFIG.TG.on("text", (msg) => {
+			if (!isAllowed(msg)) return;
 			setCommand(msg, "text");
 		});
 	} catch (error) {
@@ -569,7 +596,7 @@ CONFIG.EXPRESS.get("/ready", (req, res) => {
 CONFIG.EXPRESS.post("/workflows", async (req, res) => {
 	try {
 		const data = req.body;
-		const filename = data.name;
+		const filename = path.basename(String(data.name)); // strip directories to prevent path traversal
 		const filePath = path.join(CONFIG.WORKFLOWS_DIRECTORY, filename);
 		await fsp.mkdir(CONFIG.WORKFLOWS_DIRECTORY, { recursive: true });
 		await fsp.writeFile(filePath, JSON.stringify(data.data, null, 2), "utf8");
@@ -609,7 +636,7 @@ CONFIG.EXPRESS.get("/workflows", async (req, res) => {
 CONFIG.EXPRESS.delete("/workflows/:name", async (req, res) => {
 	try {
 		const { name } = req.params;
-		const filePath = path.join(CONFIG.WORKFLOWS_DIRECTORY, name + ".json");
+		const filePath = path.join(CONFIG.WORKFLOWS_DIRECTORY, path.basename(String(name)) + ".json"); // prevent path traversal
 		await fsp.unlink(filePath);
 		res
 			.status(200)
@@ -631,7 +658,7 @@ let ON = true;
 if (ON) {
 	createDirectories(CONFIG);
 
-	CONFIG.EXPRESS.listen(CONFIG.PORT, () => {
+	CONFIG.EXPRESS.listen(CONFIG.PORT, "127.0.0.1", () => { // dashboard is reachable from localhost only
 		console.log(`Server running at http://localhost:${CONFIG.PORT}`);
 	});
 }
